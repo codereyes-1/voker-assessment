@@ -2,7 +2,7 @@
     import Button from "$lib/components/ui/button/button.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
     import { Card, CardContent, CardHeader, CardTitle } from "$lib/components/ui/card";
-    import OrderHistory from "$lib/components/ui/OrderHistory.svelte"
+    import OrderHistory from "$lib/components/ui/orderhistory/order-history.svelte"
     import { orders } from '../stores/orders.ts';
     import { burgers, fries, drinks } from '../stores/totals.ts';
     
@@ -54,25 +54,46 @@
         const drinksQuantity = drinksOrder ? drinksOrder.quantity : 0;
 
 
+        // if cancel, called removeOrder() and update BFD stores
         if (result.action === "cancel" && result.orderNumber !== undefined) {
           const orderIndexToRemove = result.orderNumber - 1;
           const removedOrder = removeOrder(orderIndexToRemove);
 
             if (removedOrder) {
-              removedOrder.forEach(order => {
+              removedOrder.forEach((/** @type {{ item: string; quantity: number; }} */ order) => {
                 if (order.item === "burgers") burgers.update(n => n - order.quantity);
                 if (order.item === "fries") fries.update(n => n - order.quantity);
                 if (order.item === "drinks") drinks.update(n => n - order.quantity);
               });
             }
           } else {
-            // Add new order
+            // Add new order. Update BFD and orders array stores
             burgers.update(n => n + (burgerQuantity || 0));
             fries.update(n => n + (friesQuantity || 0));
             drinks.update(n => n + (drinksQuantity || 0));
 
             orders.update(orders => [...orders, orderSummary]);
           }
+
+          function speak() {
+          if('speechSynthesis' in window) {
+            let text = orderSummary.map((/** @type {{ quantity: any; item: any; }} */ order) => `${order.quantity} ${order.item}`).join(", ");
+            const voices = speechSynthesis.getVoices();
+            const voice = voices.find(voice => voice.lang === 'en-US');
+            const orderIndexToRemove = result.orderNumber;
+            if (result.action === "cancel" && result.orderNumber !== undefined) {
+              const utterance = new SpeechSynthesisUtterance(`You got it! Order number ${orderIndexToRemove} has been cancelled. If you'd like anything else just place an order.`);
+              speechSynthesis.speak(utterance);
+            } else {
+              const utterance = new SpeechSynthesisUtterance(`Got it! Your order includes ${text}.`);
+              speechSynthesis.speak(utterance);
+            }
+          } else {
+            console.log("Speech synthesis not supported");
+          }
+        }
+
+        speak()
 
 
         newOrder = "";                

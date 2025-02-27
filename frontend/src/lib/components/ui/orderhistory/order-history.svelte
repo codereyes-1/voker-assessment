@@ -1,6 +1,6 @@
 <script>
     import { Card, CardContent, CardHeader, CardTitle } from "$lib/components/ui/card";
-    import { orders } from "../../../stores/orders.ts";
+    import { orders } from "../../../../stores/orders.ts";
 
 </script>
 <ul>
